@@ -6,16 +6,18 @@
 
 using namespace std;
 
+
+
 class ExpressionCalculator {
 private:
 	double a, b, x;
 
 	double numerator() const {
-		return pow(x, 3.0 / 4.0) - a * x;
+		return pow(x, 3.0 / 4.0) - a * x;   // ⁴√x³ − a·x
 	}
 
 	double denominator() const {
-		return log10(x) + b;
+		return log10(x) + b;                  // log₁₀(x) + b
 	}
 
 public:
