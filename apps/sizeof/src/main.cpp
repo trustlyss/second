@@ -1,16 +1,8 @@
-#include <iostream>
-#include <stdexcept>
-#include "sizeof.hpp"
-
-using namespace std;
+#include "../include/sizeof.hpp"
 
 int main() {
-	try {
-		ExpressionCalculator calc(7.14, -1.92, 4.41);
-		calc.print();
-	} catch (const exception& e) {
-		cerr << "Помилка: " << e.what() << "\n";
-	}
+	printPrimitiveSizes();
+	printStructSizes();
 
 	return 0;
 }
