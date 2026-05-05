@@ -1,10 +1,9 @@
-project("calculator")
+project("lab07_2")
 
 file(GLOB SRC src/*.cpp src/*.cxx)
 
 include_directories(include)
 
-add_executable(${PROJECT_NAME} ${SRC}
-        ../lab07_2/include/lab07.hpp)
+add_executable(${PROJECT_NAME} ${SRC})
 
 target_link_libraries(${PROJECT_NAME} ${COMMON_DEPS})
