@@ -11,8 +11,7 @@ int main() {
     const double y1 =  1.0, y2 =  2.0, hy = 0.15;
 
     std::cout << std::fixed << std::setprecision(6);
-
-    // --- Table 1: y = f(x) ---
+    
     std::cout << "=== Table 1: y = f(x), x in [" << a << ", " << b << "], h = " << h << " ===\n";
     std::cout << std::setw(12) << "x" << std::setw(15) << "y = f(x)" << "\n";
     std::cout << std::string(27, '-') << "\n";
@@ -32,7 +31,6 @@ int main() {
     std::cout << "\nMax y = " << y_max << "  at x = " << x_at_max << "\n";
     std::cout << "Min y = " << y_min << "  at x = " << x_at_min << "\n";
 
-    // --- Table 2: z = f(x, y) ---
     std::cout << "\n=== Table 2: z = f(x,y) = sqrt(x*(y+1))/(x-y) ===\n";
     std::cout << "x in [" << x1 << ", " << x2 << "], hx = " << hx
               << " | y in [" << y1 << ", " << y2 << "], hy = " << hy << "\n\n";
