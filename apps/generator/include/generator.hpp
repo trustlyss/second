@@ -3,8 +3,8 @@
 struct Student {
     int    id;
     int    age;
-    double gpa;    // grade point average (1.0 – 5.0)
-    int    score;  // test score (0 – 100)
+    double gpa;
+    int    score;
 };
 
 struct Point3D {
