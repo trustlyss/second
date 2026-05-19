@@ -15,8 +15,6 @@ static double randVal(double lo = -5.0, double hi = 5.0) {
     return std::round(std::uniform_real_distribution<double>(lo, hi)(rng()) * 10) / 10;
 }
 
-// ── Vec3 ──────────────────────────────────────────────────────────────────────
-
 Vec3::Vec3(double x, double y, double z) : data{x, y, z} {}
 
 double Vec3::operator[](int i) const {
@@ -79,8 +77,6 @@ std::istream& operator>>(std::istream& is, Vec3& v) {
     is >> v.data[0] >> v.data[1] >> v.data[2];
     return is;
 }
-
-// ── Matrix ────────────────────────────────────────────────────────────────────
 
 Matrix::Matrix(int rows, int cols, double fill)
     : r(rows), c(cols), data(rows * cols, fill) {
@@ -193,8 +189,6 @@ std::istream& operator>>(std::istream& is, Matrix& m) {
             is >> m.data[m.idx(i, j)];
     return is;
 }
-
-// ── main ──────────────────────────────────────────────────────────────────────
 
 int main() {
     Vec3 v1(randVal(), randVal(), randVal());
