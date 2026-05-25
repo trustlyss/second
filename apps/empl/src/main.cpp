@@ -1,7 +1,5 @@
 #include "empl.hpp"
 
-// ── Employee ──────────────────────────────────────────────────────────────────
-
 Employee::Employee(const std::string& name, int id) : name(name), id(id) {
     if (name.empty()) throw std::invalid_argument("Name cannot be empty");
     if (id <= 0)      throw std::invalid_argument("ID must be positive");
@@ -30,8 +28,6 @@ std::ostream& operator<<(std::ostream& os, const Employee& e) {
        << " | Salary: $" << e.calculateSalary();
     return os;
 }
-
-// ── HourlyEmployee ────────────────────────────────────────────────────────────
 
 HourlyEmployee::HourlyEmployee(const std::string& name, int id,
                                double hourlyRate, double hoursWorked)
@@ -71,8 +67,6 @@ void HourlyEmployee::print() const {
 
 std::string HourlyEmployee::type() const { return "HourlyEmployee"; }
 
-// ── SalaryEmployee ────────────────────────────────────────────────────────────
-
 SalaryEmployee::SalaryEmployee(const std::string& name, int id, double monthlySalary)
     : Employee(name, id), monthlySalary(monthlySalary) {
     if (monthlySalary < 0) throw std::invalid_argument("Salary cannot be negative");
@@ -95,8 +89,6 @@ void SalaryEmployee::print() const {
 }
 
 std::string SalaryEmployee::type() const { return "SalaryEmployee"; }
-
-// ── CommissionEmployee ────────────────────────────────────────────────────────
 
 CommissionEmployee::CommissionEmployee(const std::string& name, int id,
                                        double baseSalary, double commissionRate,
@@ -143,8 +135,6 @@ void CommissionEmployee::print() const {
 }
 
 std::string CommissionEmployee::type() const { return "CommissionEmployee"; }
-
-// ── main ──────────────────────────────────────────────────────────────────────
 
 int main() {
     HourlyEmployee     hourly    ("Alice Johnson", 1, 25.0, 45.0);

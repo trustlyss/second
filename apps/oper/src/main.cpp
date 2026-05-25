@@ -1,119 +1,245 @@
 #include "oper.hpp"
 
+std::string errorCodeToString(StringErrorCode code) {
+    switch (code) {
+        case StringErrorCode::EMPTY_STRING:        return "EMPTY_STRING";
+        case StringErrorCode::INDEX_OUT_OF_RANGE:  return "INDEX_OUT_OF_RANGE";
+        case StringErrorCode::MAX_LENGTH_EXCEEDED: return "MAX_LENGTH_EXCEEDED";
+        case StringErrorCode::INVALID_DELIMITER:   return "INVALID_DELIMITER";
+        case StringErrorCode::SUBSTRING_NOT_FOUND: return "SUBSTRING_NOT_FOUND";
+        default:                                   return "UNKNOWN";
+    }
+}
+
+StringOperationException::StringOperationException(
+    const std::string& operation,
+    const std::string& message,
+    StringErrorCode    code,
+    const std::string& input)
+    : operation(operation), message(message), input(input), code(code)
+{
+    fullMessage = "[" + errorCodeToString(code) + "] "
+                + "Operation '" + operation + "' failed: "
+                + message;
+    if (!input.empty())
+        fullMessage += " (input: \"" + input + "\")";
+}
+
+const char*        StringOperationException::what()         const noexcept { return fullMessage.c_str(); }
+const std::string& StringOperationException::getOperation() const          { return operation; }
+const std::string& StringOperationException::getMessage()   const          { return message; }
+const std::string& StringOperationException::getInput()     const          { return input; }
+StringErrorCode    StringOperationException::getCode()      const          { return code; }
+
+void StringOperationException::print() const {
+    std::cout << "+-- StringOperationException\n"
+              << "|   Operation : " << operation               << "\n"
+              << "|   Error     : " << errorCodeToString(code) << "\n"
+              << "|   Message   : " << message                 << "\n";
+    if (!input.empty())
+        std::cout << "|   Input     : \"" << input << "\"\n";
+    std::cout << "+--\n";
+}
+
+void StringProcessor::checkNotEmpty(const std::string& str, const std::string& op) {
+    if (str.empty())
+        throw StringOperationException(op, "String must not be empty",
+                                       StringErrorCode::EMPTY_STRING, str);
+}
+
+void StringProcessor::checkLength(const std::string& str, const std::string& op) {
+    if (str.size() > MAX_LENGTH)
+        throw StringOperationException(op,
+            "String exceeds maximum length of " + std::to_string(MAX_LENGTH),
+            StringErrorCode::MAX_LENGTH_EXCEEDED,
+            str.substr(0, 30) + "...");
+}
+
+std::string StringProcessor::concatenate(const std::string& a, const std::string& b) {
+    checkNotEmpty(a, "concatenate");
+    checkNotEmpty(b, "concatenate");
+    std::string result = a + b;
+    checkLength(result, "concatenate");
+    return result;
+}
+
+std::string StringProcessor::toUpper(const std::string& str) {
+    checkNotEmpty(str, "toUpper");
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) { return std::toupper(c); });
+    return result;
+}
+
+std::string StringProcessor::toLower(const std::string& str) {
+    checkNotEmpty(str, "toLower");
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+char StringProcessor::charAt(const std::string& str, int index) {
+    checkNotEmpty(str, "charAt");
+    if (index < 0 || index >= (int)str.size())
+        throw StringOperationException("charAt",
+            "Index " + std::to_string(index) +
+            " is out of range for string of length " + std::to_string(str.size()),
+            StringErrorCode::INDEX_OUT_OF_RANGE, str);
+    return str[index];
+}
+
+std::string StringProcessor::substring(const std::string& str, int from, int to) {
+    checkNotEmpty(str, "substring");
+    if (from < 0 || to > (int)str.size() || from > to)
+        throw StringOperationException("substring",
+            "Range [" + std::to_string(from) + ", " + std::to_string(to) +
+            "] is invalid for string of length " + std::to_string(str.size()),
+            StringErrorCode::INDEX_OUT_OF_RANGE, str);
+    return str.substr(from, to - from);
+}
+
+std::string StringProcessor::replace(const std::string& str,
+                                     const std::string& from,
+                                     const std::string& to) {
+    checkNotEmpty(str,  "replace");
+    checkNotEmpty(from, "replace");
+    auto pos = str.find(from);
+    if (pos == std::string::npos)
+        throw StringOperationException("replace",
+            "Substring \"" + from + "\" not found",
+            StringErrorCode::SUBSTRING_NOT_FOUND, str);
+    std::string result = str;
+    result.replace(pos, from.size(), to);
+    return result;
+}
+
+std::vector<std::string> StringProcessor::split(const std::string& str,
+                                                  const std::string& delimiter) {
+    checkNotEmpty(str, "split");
+    if (delimiter.empty())
+        throw StringOperationException("split",
+            "Delimiter must not be empty",
+            StringErrorCode::INVALID_DELIMITER, str);
+    std::vector<std::string> tokens;
+    std::size_t start = 0, pos;
+    while ((pos = str.find(delimiter, start)) != std::string::npos) {
+        tokens.push_back(str.substr(start, pos - start));
+        start = pos + delimiter.size();
+    }
+    tokens.push_back(str.substr(start));
+    return tokens;
+}
+
+std::string StringProcessor::trim(const std::string& str) {
+    checkNotEmpty(str, "trim");
+    auto start = std::find_if_not(str.begin(), str.end(),
+                                  [](unsigned char c){ return std::isspace(c); });
+    auto end   = std::find_if_not(str.rbegin(), str.rend(),
+                                  [](unsigned char c){ return std::isspace(c); }).base();
+    if (start >= end)
+        throw StringOperationException("trim",
+            "String contains only whitespace",
+            StringErrorCode::EMPTY_STRING, str);
+    return std::string(start, end);
+}
+
 static void section(const std::string& title) {
     std::cout << "\n=== " << title << " ===\n";
 }
 
-int main() {
-
-    section("StaticArray<int, 6>");
-    StaticArray<int, 6> sa;
-    int vals[] = {5, 3, 8, 1, 9, 2};
-    for (int i = 0; i < 6; ++i) sa[i] = vals[i];
-    sa.print("Initial");
-    std::cout << "Min = " << sa.findMin() << ", Max = " << sa.findMax() << "\n";
-    sa.sort();
-    sa.print("Sorted asc ");
-    sa.sort(false);
-    sa.print("Sorted desc");
-    std::cout << "sa[2] = " << sa[2] << "\n";
-    std::cout << "operator<< : " << sa << "\n";
-
-    section("StaticArray<double, 4>");
-    StaticArray<double, 4> sd(3.14);
-    sd[1] = 2.71; sd[3] = 1.41;
-    sd.print("Initial");
-
-    section("StaticArray bounds check");
-    try { sa.at(99); }
-    catch (const std::out_of_range& e) { std::cout << "Error: " << e.what() << "\n"; }
-
-    section("DynamicArray<int>");
-    DynamicArray<int> da;
-    for (int v : {7, 2, 5, 1, 8, 3}) da.pushBack(v);
-    da.print("After pushBack");
-    std::cout << "size=" << da.size() << " cap=" << da.capacity() << "\n";
-    std::cout << "Min = " << da.findMin() << ", Max = " << da.findMax() << "\n";
-
-    da.insert(2, 99);
-    da.print("After insert(2, 99)");
-    da.erase(2);
-    da.print("After erase(2)");
-    da.popBack();
-    da.print("After popBack");
-
-    da.sort();
-    da.print("Sorted asc ");
-    da.sort(false);
-    da.print("Sorted desc");
-
-    section("DynamicArray copy & move");
-    DynamicArray<int> copy = da;
-    copy.print("Copy");
-    DynamicArray<int> moved = std::move(copy);
-    moved.print("Moved");
-    std::cout << "copy.size() after move = " << copy.size() << "\n";
-
-    section("DynamicArray<std::string>");
-    DynamicArray<std::string> ds;
-    ds.pushBack("banana");
-    ds.pushBack("apple");
-    ds.pushBack("cherry");
-    ds.pushBack("date");
-    ds.print("Before sort");
-    ds.sort();
-    ds.print("After sort ");
-
-    section("DynamicArray resize & reserve");
-    DynamicArray<int> dr;
-    dr.reserve(10);
-    std::cout << "After reserve(10): cap=" << dr.capacity() << "\n";
-    dr.resize(5, 42);
-    dr.print("After resize(5, 42)");
-
-    section("SharedPtr<int> — shared ownership");
-    SharedPtr<int> sp1(new int(100));
-    std::cout << sp1 << "\n";
-    {
-        SharedPtr<int> sp2 = sp1;
-        std::cout << "sp1: " << sp1 << "\n";
-        std::cout << "sp2: " << sp2 << "\n";
-        SharedPtr<int> sp3 = sp2;
-        std::cout << "sp3: " << sp3 << "\n";
-        *sp3 = 999;
-        std::cout << "After *sp3=999, sp1: " << sp1 << "\n";
+static void tryOp(const std::string& label, void(*fn)()) {
+    std::cout << "\n[TEST] " << label << "\n";
+    try {
+        fn();
+    } catch (const StringOperationException& e) {
+        e.print();
     }
-    std::cout << "After sp2,sp3 out of scope, sp1: " << sp1 << "\n";
+}
 
-    section("SharedPtr — copy assignment");
-    SharedPtr<int> spA(new int(1));
-    SharedPtr<int> spB(new int(2));
-    std::cout << "spA: " << spA << "\n";
-    std::cout << "spB: " << spB << "\n";
-    spA = spB;
-    std::cout << "After spA=spB:\n";
-    std::cout << "spA: " << spA << "\n";
-    std::cout << "spB: " << spB << "\n";
+int main() {
+    section("Successful operations");
 
-    section("SharedPtr — move");
-    SharedPtr<int> spC(new int(77));
-    SharedPtr<int> spD = std::move(spC);
-    std::cout << "spC after move: " << spC << "\n";
-    std::cout << "spD after move: " << spD << "\n";
+    tryOp("concatenate(\"Hello\", \" World\")", [] {
+        auto r = StringProcessor::concatenate("Hello", " World");
+        std::cout << "Result: \"" << r << "\"\n";
+    });
 
-    section("SharedPtr — reset");
-    spD.reset(new int(55));
-    std::cout << "spD after reset(55): " << spD << "\n";
-    spD.reset();
-    std::cout << "spD after reset(): " << spD << "\n";
+    tryOp("toUpper(\"hello world\")", [] {
+        auto r = StringProcessor::toUpper("hello world");
+        std::cout << "Result: \"" << r << "\"\n";
+    });
 
-    section("SharedPtr<std::string>");
-    SharedPtr<std::string> ss1(new std::string("hello"));
-    SharedPtr<std::string> ss2 = ss1;
-    std::cout << "ss1: " << ss1 << "\n";
-    std::cout << "ss2->size() = " << ss2->size() << "\n";
-    *ss1 = "world";
-    std::cout << "After *ss1=\"world\", ss2: " << ss2 << "\n";
+    tryOp("toLower(\"HELLO WORLD\")", [] {
+        auto r = StringProcessor::toLower("HELLO WORLD");
+        std::cout << "Result: \"" << r << "\"\n";
+    });
+
+    tryOp("charAt(\"Hello\", 1)", [] {
+        char c = StringProcessor::charAt("Hello", 1);
+        std::cout << "Result: '" << c << "'\n";
+    });
+
+    tryOp("substring(\"Hello World\", 0, 5)", [] {
+        auto r = StringProcessor::substring("Hello World", 0, 5);
+        std::cout << "Result: \"" << r << "\"\n";
+    });
+
+    tryOp("replace(\"Hello World\", \"World\", \"C++\")", [] {
+        auto r = StringProcessor::replace("Hello World", "World", "C++");
+        std::cout << "Result: \"" << r << "\"\n";
+    });
+
+    tryOp("split(\"a,b,c,d\", \",\")", [] {
+        auto tokens = StringProcessor::split("a,b,c,d", ",");
+        std::cout << "Result: [";
+        for (std::size_t i = 0; i < tokens.size(); ++i)
+            std::cout << "\"" << tokens[i] << "\"" << (i+1<tokens.size() ? ", " : "");
+        std::cout << "]\n";
+    });
+
+    tryOp("trim(\"  hello  \")", [] {
+        auto r = StringProcessor::trim("  hello  ");
+        std::cout << "Result: \"" << r << "\"\n";
+    });
+
+    section("Error cases");
+
+    tryOp("concatenate(\"\", \"World\") -- EMPTY_STRING", [] {
+        StringProcessor::concatenate("", "World");
+    });
+
+    tryOp("concatenate(60xA, 60xB) -- MAX_LENGTH_EXCEEDED", [] {
+        StringProcessor::concatenate(std::string(60, 'A'), std::string(60, 'B'));
+    });
+
+    tryOp("charAt(\"Hi\", 99) -- INDEX_OUT_OF_RANGE", [] {
+        StringProcessor::charAt("Hi", 99);
+    });
+
+    tryOp("charAt(\"Hi\", -1) -- INDEX_OUT_OF_RANGE", [] {
+        StringProcessor::charAt("Hi", -1);
+    });
+
+    tryOp("substring(\"Hello\", 3, 1) -- INDEX_OUT_OF_RANGE", [] {
+        StringProcessor::substring("Hello", 3, 1);
+    });
+
+    tryOp("replace(\"Hello\", \"XYZ\", \"A\") -- SUBSTRING_NOT_FOUND", [] {
+        StringProcessor::replace("Hello", "XYZ", "A");
+    });
+
+    tryOp("split(\"Hello\", \"\") -- INVALID_DELIMITER", [] {
+        StringProcessor::split("Hello", "");
+    });
+
+    tryOp("trim(\"   \") -- EMPTY_STRING", [] {
+        StringProcessor::trim("   ");
+    });
+
+    tryOp("toUpper(\"\") -- EMPTY_STRING", [] {
+        StringProcessor::toUpper("");
+    });
 
     return 0;
 }
